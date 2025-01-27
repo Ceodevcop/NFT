@@ -1,16 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract MyNFT is ERC721, Ownable {
-    uint256 public nextTokenId;
+contract MyDynamicNFT is ERC721URIStorage, Ownable {
+    uint256 public tokenCounter;
 
-    constructor() ERC721("MyNFT", "MNFT") {}
+    constructor() ERC721("MyDynamicNFT", "DYNFT") {
+        tokenCounter = 0;
+    }
 
-    function mint(address recipient) public onlyOwner {
-        _safeMint(recipient, nextTokenId);
-        nextTokenId++;
+    function mint(address recipient, string memory tokenURI) public onlyOwner {
+        uint256 newTokenId = tokenCounter;
+        _safeMint(recipient, newTokenId);
+        _setTokenURI(newTokenId, tokenURI); // Assign dynamic metadata
+        tokenCounter++;
     }
 }
