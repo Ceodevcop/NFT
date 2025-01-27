@@ -168,6 +168,17 @@
 
     // Initialize referral count on page load
     document.getElementById("referral-count").innerText = localStorage.getItem("referralCount") || 0;
-  </script>
+ import org.walletconnect.Session;
+import org.walletconnect.Approval;
+import org.walletconnect.JSonRpcException;
+import org.walletconnect.utils.Log;
+
+// Initialize WalletConnect
+Session walletConnectSession = new Session(context);
+walletConnectSession.init(new Session.Callback() {
+    @Override
+    public void onApprove(Approval approval) {
+        Log.d("WalletConnect", "Approved: " + approval.get
+ </script>
 </body>
 </html>
