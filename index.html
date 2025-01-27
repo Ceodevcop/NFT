@@ -48,7 +48,34 @@
   <script>
     let contract;
     const contractAddress = "YOUR_CONTRACT_ADDRESS";
-    const abi = [/* Contract ABI here */];
+    const abi = [const abi = [
+  {
+    "inputs": [],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [],
+    "name": "mint",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "owner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+];
+];
     const mintInterval = 7 * 24 * 60 * 60 * 1000; // 1 week in milliseconds
 
     async function connectWallet() {
