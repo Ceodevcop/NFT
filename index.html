@@ -3,18 +3,53 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mint NFT</title>
+  <title>Mint Your NFT</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      height: 100vh;
+      margin: 0;
+      background-color: #f5f5f5;
+    }
+    h1 {
+      color: #333;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 10px;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      background-color: #007BFF;
+      color: white;
+    }
+    button:disabled {
+      background-color: gray;
+      cursor: not-allowed;
+    }
+    #timer {
+      margin-top: 10px;
+      color: #555;
+    }
+  </style>
 </head>
 <body>
   <h1>Mint Your NFT</h1>
   <button id="connect">Connect Wallet</button>
-  <button id="mint">Mint NFT</button>
+  <button id="mint" disabled>Mint NFT</button>
+  <div id="timer"></div>
 
   <script src="https://cdn.ethers.io/lib/ethers-5.6.min.js"></script>
   <script>
     let contract;
     const contractAddress = "YOUR_CONTRACT_ADDRESS";
     const abi = [/* Contract ABI here */];
+    const mintInterval = 7 * 24 * 60 * 60 * 1000; // 1 week in milliseconds
 
     async function connectWallet() {
       if (window.ethereum) {
@@ -23,6 +58,7 @@
         const signer = provider.getSigner();
         contract = new ethers.Contract(contractAddress, abi, signer);
         alert("Wallet Connected!");
+        checkLastMint();
       } else {
         alert("Install MetaMask!");
       }
@@ -30,16 +66,49 @@
 
     async function mintNFT() {
       if (contract) {
+        const currentTime = new Date().getTime();
+        localStorage.setItem("lastMintTime", currentTime);
+
         const tx = await contract.mint(await contract.signer.getAddress());
         await tx.wait();
         alert("NFT Minted!");
+
+        checkLastMint();
       } else {
         alert("Connect Wallet First!");
       }
     }
 
+    function checkLastMint() {
+      const lastMintTime = localStorage.getItem("lastMintTime");
+      const currentTime = new Date().getTime();
+
+      if (lastMintTime) {
+        const timeSinceLastMint = currentTime - parseInt(lastMintTime, 10);
+        const timeLeft = mintInterval - timeSinceLastMint;
+
+        if (timeLeft > 0) {
+          const hoursLeft = Math.floor(timeLeft / (1000 * 60 * 60));
+          const minutesLeft = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+          const secondsLeft = Math.floor((timeLeft % (1000 * 60)) / 1000);
+
+          document.getElementById("timer").textContent = `You can mint again in ${hoursLeft}h ${minutesLeft}m ${secondsLeft}s.`;
+          document.getElementById("mint").disabled = true;
+
+          setTimeout(checkLastMint, 1000); // Update timer every second
+        } else {
+          document.getElementById("timer").textContent = "You can mint now!";
+          document.getElementById("mint").disabled = false;
+        }
+      } else {
+        document.getElementById("timer").textContent = "You can mint now!";
+        document.getElementById("mint").disabled = false;
+      }
+    }
+
     document.getElementById("connect").onclick = connectWallet;
     document.getElementById("mint").onclick = mintNFT;
+    checkLastMint(); // Check on page load
   </script>
 </body>
 </html>
