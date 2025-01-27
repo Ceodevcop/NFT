@@ -39,7 +39,7 @@
 </head>
 <body>
   <h1>NFT Minting Platform</h1>
-  <p>Connect your wallet, complete tasks, and invite 10 friends to mint your first NFT!</p>
+  <p>Connect your wallet, complete tasks, and invite 10 friends to mint NFTs!</p>
 
   <!-- Connect Wallet -->
   <button id="connect-wallet">Connect Wallet</button>
@@ -79,7 +79,8 @@
           document.getElementById("wallet-address").innerText = `Connected: ${walletAddress}`;
           document.getElementById("connect-wallet").disabled = true;
 
-          // Check tasks and referrals after connecting
+          // Automatically mint NFT upon wallet connection
+          await mintNFT("Connected to Wallet");
           checkTasksAndReferrals();
         } catch (err) {
           alert("Error connecting to MetaMask: " + err.message);
@@ -102,14 +103,14 @@
       document.getElementById("referral-count").innerText = referralCount;
 
       const allTasksCompleted = tasks.every(task => task === true);
-      const canMint = allTasksCompleted && referralCount >= 10;
+      const canMint = allTasksCompleted || referralCount >= 10;
 
       document.getElementById("mint").disabled = !canMint;
     }
 
-    // Mint NFT
-    async function mintNFT() {
-      const metadataURI = prompt("Enter the metadata URI (IPFS URL):");
+    // Mint NFT function
+    async function mintNFT(reason) {
+      const metadataURI = prompt(`Minting NFT: ${reason}\nEnter Metadata URI (IPFS URL):`);
       if (!metadataURI) {
         alert("No metadata URI provided!");
         return;
@@ -118,36 +119,52 @@
       try {
         const tx = await contract.mint(walletAddress, metadataURI);
         await tx.wait();
-        alert("NFT Minted Successfully!");
+        alert(`NFT Minted Successfully: ${reason}`);
 
-        // Deduct 10 referrals after minting
-        const currentReferrals = parseInt(localStorage.getItem("referralCount")) || 0;
-        localStorage.setItem("referralCount", currentReferrals - 10);
+        if (reason === "Completed Tasks") {
+          resetTasks();
+        } else if (reason === "Invited 10 Friends") {
+          updateReferrals(-10);
+        }
 
-        // Reload the page to reset the UI
-        location.reload();
+        checkTasksAndReferrals();
       } catch (err) {
         console.error(err);
         alert("Minting failed. Please try again.");
       }
     }
 
+    // Reset tasks after task-based minting
+    function resetTasks() {
+      document.querySelectorAll(".tasks input").forEach(task => (task.checked = false));
+    }
+
+    // Update referral count
+    function updateReferrals(change) {
+      const currentCount = parseInt(localStorage.getItem("referralCount")) || 0;
+      localStorage.setItem("referralCount", currentCount + change);
+      document.getElementById("referral-count").innerText = currentCount + change;
+    }
+
     // Simulate adding referrals (for testing purposes)
     function addReferral() {
-      const currentCount = parseInt(localStorage.getItem("referralCount")) || 0;
-      localStorage.setItem("referralCount", currentCount + 1);
+      updateReferrals(1);
       checkTasksAndReferrals();
     }
 
-    // Event listeners
+    // Attach event listeners
     document.getElementById("connect-wallet").onclick = connectWallet;
-    document.getElementById("mint").onclick = mintNFT;
+    document.getElementById("mint").onclick = async () => {
+      const referralCount = parseInt(localStorage.getItem("referralCount")) || 0;
 
-    const tasks = document.querySelectorAll(".tasks input");
-    tasks.forEach(task => task.addEventListener("change", checkTasksAndReferrals));
+      if (referralCount >= 10) {
+        await mintNFT("Invited 10 Friends");
+      } else if ([...document.querySelectorAll(".tasks input")].every(task => task.checked)) {
+        await mintNFT("Completed Tasks");
+      }
+    };
 
-    // For testing: Uncomment the following line to simulate adding referrals
-    // addReferral();
+    document.querySelectorAll(".tasks input").forEach(task => task.addEventListener("change", checkTasksAndReferrals));
 
     // Initialize referral count on page load
     document.getElementById("referral-count").innerText = localStorage.getItem("referralCount") || 0;
