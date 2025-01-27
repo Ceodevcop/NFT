@@ -3,206 +3,103 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mint Your NFT</title>
+  <title>BAT NFT</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      flex-direction: column;
-      height: 100vh;
-      margin: 0;
-      background-color: #f5f5f5;
+      text-align: center;
+      padding: 20px;
     }
-    h1 {
-      color: #333;
+    input, button {
+      padding: 10px;
+      margin: 10px;
+      width: 300px;
+      font-size: 16px;
     }
     button {
-      padding: 10px 20px;
-      margin: 10px;
-      font-size: 16px;
+      cursor: pointer;
+      background-color: #4CAF50;
+      color: white;
       border: none;
       border-radius: 5px;
-      cursor: pointer;
-      background-color: #007BFF;
-      color: white;
     }
     button:disabled {
       background-color: gray;
       cursor: not-allowed;
     }
-    .task {
-      margin: 10px 0;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      background-color: #fff;
-      width: 300px;
-    }
-    .task.completed {
-      background-color: #d4edda;
-      color: #155724;
-      border-color: #c3e6cb;
-    }
   </style>
 </head>
 <body>
-  <h1>Mint Your NFT</h1>
+  <h1>BAT NFT </h1>
+  <p>Complete tasks and invite 7 friends to mint your NFT!</p>
+  
+  <!-- Input for referral address -->
+  <input id="referrer" placeholder="Enter Referrer Wallet Address">
 
-  <div id="tasks">
-    <div class="task" id="taskA">
-      <p>
-        <strong>Task A:</strong> 
-        <a href="https://example.com/join" target="_blank" onclick="completeTask('A')">Join our platform</a>
-      </p>
-    </div>
-    <div class="task" id="taskB">
-      <p>
-        <strong>Task B:</strong> 
-        <a href="https://twitter.com/yourprofile" target="_blank" onclick="completeTask('B')">Follow us on Twitter</a>
-      </p>
-    </div>
-    <div class="task" id="taskC">
-      <p>
-        <strong>Task C:</strong> 
-        <a href="https://instagram.com/yourprofile" target="_blank" onclick="completeTask('C')">Follow us on Instagram</a>
-      </p>
-    </div>
-    <div class="task" id="taskD">
-      <p>
-        <strong>Task D:</strong> 
-        <a href="https://youtube.com/yourchannel" target="_blank" onclick="completeTask('D')">Subscribe to our YouTube channel</a>
-      </p>
-    </div>
-    <div class="task" id="taskE">
-      <p>
-        <strong>Task E:</strong> 
-        <a href="https://example.com/watch" target="_blank" onclick="completeTask('E')">Watch the full video</a>
-      </p>
-    </div>
-  </div>
+  <!-- Mint button -->
+  <button id="mint" disabled>Mint Your NFT</button>
 
-  <p id="referralMessage">Share your referral link to invite 7 friends:</p>
-  <input id="referralLink" readonly value="https://your-site.com?ref=YOUR_WALLET_ADDRESS">
-  <p id="referrals">Referrals: 0/7</p>
-
-  <button id="mint" disabled>Mint NFT</button>
-
-  <script src="https://cdn.ethers.io/lib/ethers-5.6.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ethers/dist/ethers.min.js"></script>
   <script>
-    // Blockchain Setup
-    const contractAddress = "YOUR_CONTRACT_ADDRESS";
-    const abi = [const abi = [
-  {
-    "inputs": [],
-    "stateMutability": "nonpayable",
-    "type": "constructor"
-  },
-  {
-    "inputs": [],
-    "name": "mint",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "owner",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  }
-];
-];
+    // Contract details
+    const contractAddress = "YOUR_DEPLOYED_CONTRACT_ADDRESS"; // Replace with your contract address
+    const abi = [/* YOUR_CONTRACT_ABI */]; // Replace with your contract ABI
 
-    let completedTasks = JSON.parse(localStorage.getItem("completedTasks")) || [];
-    let referralCount = parseInt(localStorage.getItem("referralCount"), 10) || 0;
     let provider, signer, contract;
 
-    // Initialize Ethereum Connection
-    async function initBlockchain() {
-      if (window.ethereum) {
-        provider = new ethers.providers.Web3Provider(window.ethereum);
-        signer = provider.getSigner();
-        contract = new ethers.Contract(contractAddress, abi, signer);
-        document.getElementById("referralLink").value = `https://your-site.com?ref=${await signer.getAddress()}`;
+    // Initialize the connection to MetaMask and contract
+    async function init() {
+      if (typeof window.ethereum !== "undefined") {
+        try {
+          // Request account access
+          await ethereum.request({ method: "eth_requestAccounts" });
+          provider = new ethers.providers.Web3Provider(window.ethereum);
+          signer = provider.getSigner();
+          contract = new ethers.Contract(contractAddress, abi, signer);
+
+          // Enable the mint button if MetaMask is connected
+          document.getElementById("mint").disabled = false;
+        } catch (err) {
+          alert("Error connecting to MetaMask: " + err.message);
+        }
       } else {
-        alert("Please install MetaMask to use this dApp!");
+        alert("MetaMask is not installed! Please install it to proceed.");
       }
     }
 
-    // Mint NFT
+    // Mint NFT function
     async function mintNFT() {
+      const referrer = document.getElementById("referrer").value;
+      if (!referrer) {
+        alert("Please enter a referrer wallet address!");
+        return;
+      }
+
+      const metadataURI = prompt("Enter the metadata URI (IPFS URL):");
+      if (!metadataURI) {
+        alert("No metadata URI provided!");
+        return;
+      }
+
       try {
-        const tx = await contract.mint(await signer.getAddress());
+        const tx = await contract.mintWithReferral(
+          await signer.getAddress(),
+          metadataURI,
+          referrer
+        );
         await tx.wait();
         alert("NFT Minted Successfully!");
-        localStorage.removeItem("completedTasks");
-        localStorage.removeItem("referralCount");
-        location.reload();
       } catch (err) {
-        console.error("Error minting NFT:", err);
+        console.error(err);
         alert("Minting failed. Please try again.");
       }
     }
 
-    // Mark completed tasks on page load
-    window.onload = () => {
-      initBlockchain();
-
-      // Load completed tasks
-      completedTasks.forEach(taskId => {
-        document.getElementById("task" + taskId).classList.add("completed");
-      });
-
-      // Load referral count
-      document.getElementById("referrals").textContent = `Referrals: ${referralCount}/7`;
-      checkEligibility();
-    };
-
-    // Task completion handler
-    function completeTask(taskId) {
-      if (!completedTasks.includes(taskId)) {
-        completedTasks.push(taskId);
-        localStorage.setItem("completedTasks", JSON.stringify(completedTasks));
-        document.getElementById("task" + taskId).classList.add("completed");
-        checkEligibility();
-      }
-    }
-
-    // Update referral count
-    function updateReferrals(newCount) {
-      referralCount = parseInt(newCount, 10) || 0;
-      localStorage.setItem("referralCount", referralCount);
-      document.getElementById("referrals").textContent = `Referrals: ${referralCount}/7`;
-      checkEligibility();
-    }
-
-    // Check if all tasks are completed and referral goal is met
-    function checkEligibility() {
-      if (completedTasks.length === 5 && referralCount >= 7) {
-        document.getElementById("mint").disabled = false;
-      } else {
-        document.getElementById("mint").disabled = true;
-      }
-    }
-
+    // Attach event listeners
     document.getElementById("mint").onclick = mintNFT;
 
-    // Listen for referral query parameter
-    const urlParams = new URLSearchParams(window.location.search);
-    const referrer = urlParams.get("ref");
-    if (referrer) {
-      alert(`Referred by: ${referrer}`);
-      // Increment referral count logic here (e.g., store on server or in contract)
-    }
+    // Initialize on page load
+    window.onload = init;
   </script>
 </body>
 </html>
