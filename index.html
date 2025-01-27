@@ -39,42 +39,47 @@
 </head>
 <body>
   <h1>NFT Minting Platform</h1>
-  <p>Complete the tasks below, invite 7 friends, and mint your NFT!</p>
+  <p>Connect your wallet, complete tasks, and invite 10 friends to mint your first NFT!</p>
+
+  <!-- Connect Wallet -->
+  <button id="connect-wallet">Connect Wallet</button>
+  <p id="wallet-address"></p>
 
   <!-- Task Completion -->
   <div class="tasks">
     <label><input type="checkbox" id="task-a"> Join Telegram</label><br>
     <label><input type="checkbox" id="task-b"> Follow on Twitter</label><br>
     <label><input type="checkbox" id="task-c"> Subscribe to YouTube</label><br>
-    <label><input type="checkbox" id="task-d"> Watch the Full Video</label><br>
-    <label><input type="checkbox" id="task-e"> Earn 1 Referral</label>
+    <label><input type="checkbox" id="task-d"> Watch Full Video</label><br>
   </div>
 
   <!-- Referral Count -->
-  <input id="referrer" placeholder="Enter Referrer Wallet Address"><br>
-  <p>Referral Count: <span id="referral-count">0</span>/7</p>
+  <p>Referral Count: <span id="referral-count">0</span>/10</p>
 
   <!-- Mint Button -->
   <button id="mint" disabled>Mint Your NFT</button>
 
   <script src="https://cdn.jsdelivr.net/npm/ethers/dist/ethers.min.js"></script>
   <script>
-    // Contract Details
     const contractAddress = "YOUR_DEPLOYED_CONTRACT_ADDRESS"; // Replace with your contract address
     const abi = [/* YOUR_CONTRACT_ABI */]; // Replace with your contract ABI
 
-    let provider, signer, contract;
+    let provider, signer, contract, walletAddress;
 
-    // Initialize connection to MetaMask and contract
-    async function init() {
+    // Initialize connection to MetaMask
+    async function connectWallet() {
       if (typeof window.ethereum !== "undefined") {
         try {
           await ethereum.request({ method: "eth_requestAccounts" });
           provider = new ethers.providers.Web3Provider(window.ethereum);
           signer = provider.getSigner();
+          walletAddress = await signer.getAddress();
           contract = new ethers.Contract(contractAddress, abi, signer);
 
-          // Enable mint button if MetaMask is connected
+          document.getElementById("wallet-address").innerText = `Connected: ${walletAddress}`;
+          document.getElementById("connect-wallet").disabled = true;
+
+          // Check tasks and referrals after connecting
           checkTasksAndReferrals();
         } catch (err) {
           alert("Error connecting to MetaMask: " + err.message);
@@ -84,33 +89,26 @@
       }
     }
 
-    // Check if all tasks are completed and referrals are met
+    // Check tasks and referrals
     function checkTasksAndReferrals() {
       const tasks = [
         document.getElementById("task-a").checked,
         document.getElementById("task-b").checked,
         document.getElementById("task-c").checked,
         document.getElementById("task-d").checked,
-        document.getElementById("task-e").checked
       ];
 
       const referralCount = parseInt(localStorage.getItem("referralCount")) || 0;
       document.getElementById("referral-count").innerText = referralCount;
 
       const allTasksCompleted = tasks.every(task => task === true);
-      const canMint = allTasksCompleted && referralCount >= 7;
+      const canMint = allTasksCompleted && referralCount >= 10;
 
       document.getElementById("mint").disabled = !canMint;
     }
 
-    // Mint NFT function
+    // Mint NFT
     async function mintNFT() {
-      const referrer = document.getElementById("referrer").value;
-      if (!referrer) {
-        alert("Please enter a referrer wallet address!");
-        return;
-      }
-
       const metadataURI = prompt("Enter the metadata URI (IPFS URL):");
       if (!metadataURI) {
         alert("No metadata URI provided!");
@@ -118,16 +116,15 @@
       }
 
       try {
-        const tx = await contract.mintWithReferral(
-          await signer.getAddress(),
-          metadataURI,
-          referrer
-        );
+        const tx = await contract.mint(walletAddress, metadataURI);
         await tx.wait();
         alert("NFT Minted Successfully!");
 
-        // Reset tasks and referrals after minting
-        localStorage.setItem("referralCount", "0");
+        // Deduct 10 referrals after minting
+        const currentReferrals = parseInt(localStorage.getItem("referralCount")) || 0;
+        localStorage.setItem("referralCount", currentReferrals - 10);
+
+        // Reload the page to reset the UI
         location.reload();
       } catch (err) {
         console.error(err);
@@ -142,17 +139,18 @@
       checkTasksAndReferrals();
     }
 
-    // Attach event listeners
+    // Event listeners
+    document.getElementById("connect-wallet").onclick = connectWallet;
     document.getElementById("mint").onclick = mintNFT;
 
     const tasks = document.querySelectorAll(".tasks input");
     tasks.forEach(task => task.addEventListener("change", checkTasksAndReferrals));
 
-    // Initialize on page load
-    window.onload = init;
-
-    // For testing: Uncomment this line to simulate referrals
+    // For testing: Uncomment the following line to simulate adding referrals
     // addReferral();
+
+    // Initialize referral count on page load
+    document.getElementById("referral-count").innerText = localStorage.getItem("referralCount") || 0;
   </script>
 </body>
 </html>
