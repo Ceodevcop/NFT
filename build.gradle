@@ -1,0 +1,4 @@
+dependencies {
+    implementation 'com.github.walletconnect:walletconnect-kotlin:2.0.0-beta1' // WalletConnect
+    implementation 'com.github.web3j:core:4.8.7' // Web3j for Ethereum interaction
+}
