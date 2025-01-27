@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mint NFT</title>
+</head>
+<body>
+  <h1>Mint Your NFT</h1>
+  <button id="connect">Connect Wallet</button>
+  <button id="mint">Mint NFT</button>
+
+  <script src="https://cdn.ethers.io/lib/ethers-5.6.min.js"></script>
+  <script>
+    let contract;
+    const contractAddress = "YOUR_CONTRACT_ADDRESS";
+    const abi = [/* Contract ABI here */];
+
+    async function connectWallet() {
+      if (window.ethereum) {
+        await window.ethereum.request({ method: "eth_requestAccounts" });
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        const signer = provider.getSigner();
+        contract = new ethers.Contract(contractAddress, abi, signer);
+        alert("Wallet Connected!");
+      } else {
+        alert("Install MetaMask!");
+      }
+    }
+
+    async function mintNFT() {
+      if (contract) {
+        const tx = await contract.mint(await contract.signer.getAddress());
+        await tx.wait();
+        alert("NFT Minted!");
+      } else {
+        alert("Connect Wallet First!");
+      }
+    }
+
+    document.getElementById("connect").onclick = connectWallet;
+    document.getElementById("mint").onclick = mintNFT;
+  </script>
+</body>
+</html>
