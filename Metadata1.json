@@ -1,0 +1,15 @@
+{
+  "name": "MyNFT #1",
+  "description": "This is NFT #1 in the collection.",
+  "image": "ipfs://<IPFS_HASH>/image1.png",
+  "attributes": [
+    {
+      "trait_type": "Level",
+      "value": "Beginner"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Common"
+    }
+  ]
+}
