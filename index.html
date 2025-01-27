@@ -32,21 +32,66 @@
       background-color: gray;
       cursor: not-allowed;
     }
-    #timer {
-      margin-top: 10px;
-      color: #555;
+    .task {
+      margin: 10px 0;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      background-color: #fff;
+      width: 300px;
+    }
+    .task.completed {
+      background-color: #d4edda;
+      color: #155724;
+      border-color: #c3e6cb;
     }
   </style>
 </head>
 <body>
   <h1>Mint Your NFT</h1>
-  <button id="connect">Connect Wallet</button>
+
+  <div id="tasks">
+    <div class="task" id="taskA">
+      <p>
+        <strong>Task A:</strong> 
+        <a href="https://example.com/join" target="_blank" onclick="completeTask('A')">Join our platform</a>
+      </p>
+    </div>
+    <div class="task" id="taskB">
+      <p>
+        <strong>Task B:</strong> 
+        <a href="https://twitter.com/yourprofile" target="_blank" onclick="completeTask('B')">Follow us on Twitter</a>
+      </p>
+    </div>
+    <div class="task" id="taskC">
+      <p>
+        <strong>Task C:</strong> 
+        <a href="https://instagram.com/yourprofile" target="_blank" onclick="completeTask('C')">Follow us on Instagram</a>
+      </p>
+    </div>
+    <div class="task" id="taskD">
+      <p>
+        <strong>Task D:</strong> 
+        <a href="https://youtube.com/yourchannel" target="_blank" onclick="completeTask('D')">Subscribe to our YouTube channel</a>
+      </p>
+    </div>
+    <div class="task" id="taskE">
+      <p>
+        <strong>Task E:</strong> 
+        <a href="https://example.com/watch" target="_blank" onclick="completeTask('E')">Watch the full video</a>
+      </p>
+    </div>
+  </div>
+
+  <p id="referralMessage">Share your referral link to invite 7 friends:</p>
+  <input id="referralLink" readonly value="https://your-site.com?ref=YOUR_WALLET_ADDRESS">
+  <p id="referrals">Referrals: 0/7</p>
+
   <button id="mint" disabled>Mint NFT</button>
-  <div id="timer"></div>
 
   <script src="https://cdn.ethers.io/lib/ethers-5.6.min.js"></script>
   <script>
-    let contract;
+    // Blockchain Setup
     const contractAddress = "YOUR_CONTRACT_ADDRESS";
     const abi = [const abi = [
   {
@@ -76,66 +121,88 @@
   }
 ];
 ];
-    const mintInterval = 7 * 24 * 60 * 60 * 1000; // 1 week in milliseconds
 
-    async function connectWallet() {
+    let completedTasks = JSON.parse(localStorage.getItem("completedTasks")) || [];
+    let referralCount = parseInt(localStorage.getItem("referralCount"), 10) || 0;
+    let provider, signer, contract;
+
+    // Initialize Ethereum Connection
+    async function initBlockchain() {
       if (window.ethereum) {
-        await window.ethereum.request({ method: "eth_requestAccounts" });
-        const provider = new ethers.providers.Web3Provider(window.ethereum);
-        const signer = provider.getSigner();
+        provider = new ethers.providers.Web3Provider(window.ethereum);
+        signer = provider.getSigner();
         contract = new ethers.Contract(contractAddress, abi, signer);
-        alert("Wallet Connected!");
-        checkLastMint();
+        document.getElementById("referralLink").value = `https://your-site.com?ref=${await signer.getAddress()}`;
       } else {
-        alert("Use MetaMask Browser to connect your wallet!");
+        alert("Please install MetaMask to use this dApp!");
       }
     }
 
+    // Mint NFT
     async function mintNFT() {
-      if (contract) {
-        const currentTime = new Date().getTime();
-        localStorage.setItem("lastMintTime", currentTime);
-
-        const tx = await contract.mint(await contract.signer.getAddress());
+      try {
+        const tx = await contract.mint(await signer.getAddress());
         await tx.wait();
-        alert("NFT Minted!");
-
-        checkLastMint();
-      } else {
-        alert("Connect Wallet First!");
+        alert("NFT Minted Successfully!");
+        localStorage.removeItem("completedTasks");
+        localStorage.removeItem("referralCount");
+        location.reload();
+      } catch (err) {
+        console.error("Error minting NFT:", err);
+        alert("Minting failed. Please try again.");
       }
     }
 
-    function checkLastMint() {
-      const lastMintTime = localStorage.getItem("lastMintTime");
-      const currentTime = new Date().getTime();
+    // Mark completed tasks on page load
+    window.onload = () => {
+      initBlockchain();
 
-      if (lastMintTime) {
-        const timeSinceLastMint = currentTime - parseInt(lastMintTime, 10);
-        const timeLeft = mintInterval - timeSinceLastMint;
+      // Load completed tasks
+      completedTasks.forEach(taskId => {
+        document.getElementById("task" + taskId).classList.add("completed");
+      });
 
-        if (timeLeft > 0) {
-          const hoursLeft = Math.floor(timeLeft / (1000 * 60 * 60));
-          const minutesLeft = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-          const secondsLeft = Math.floor((timeLeft % (1000 * 60)) / 1000);
+      // Load referral count
+      document.getElementById("referrals").textContent = `Referrals: ${referralCount}/7`;
+      checkEligibility();
+    };
 
-          document.getElementById("timer").textContent = `You can mint again in ${hoursLeft}h ${minutesLeft}m ${secondsLeft}s.`;
-          document.getElementById("mint").disabled = true;
+    // Task completion handler
+    function completeTask(taskId) {
+      if (!completedTasks.includes(taskId)) {
+        completedTasks.push(taskId);
+        localStorage.setItem("completedTasks", JSON.stringify(completedTasks));
+        document.getElementById("task" + taskId).classList.add("completed");
+        checkEligibility();
+      }
+    }
 
-          setTimeout(checkLastMint, 1000); // Update timer every second
-        } else {
-          document.getElementById("timer").textContent = "You can mint now!";
-          document.getElementById("mint").disabled = false;
-        }
-      } else {
-        document.getElementById("timer").textContent = "You can mint now!";
+    // Update referral count
+    function updateReferrals(newCount) {
+      referralCount = parseInt(newCount, 10) || 0;
+      localStorage.setItem("referralCount", referralCount);
+      document.getElementById("referrals").textContent = `Referrals: ${referralCount}/7`;
+      checkEligibility();
+    }
+
+    // Check if all tasks are completed and referral goal is met
+    function checkEligibility() {
+      if (completedTasks.length === 5 && referralCount >= 7) {
         document.getElementById("mint").disabled = false;
+      } else {
+        document.getElementById("mint").disabled = true;
       }
     }
 
-    document.getElementById("connect").onclick = connectWallet;
     document.getElementById("mint").onclick = mintNFT;
-    checkLastMint(); // Check on page load
+
+    // Listen for referral query parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const referrer = urlParams.get("ref");
+    if (referrer) {
+      alert(`Referred by: ${referrer}`);
+      // Increment referral count logic here (e.g., store on server or in contract)
+    }
   </script>
 </body>
 </html>
